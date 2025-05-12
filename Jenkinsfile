@@ -91,7 +91,10 @@ pipeline {
             echo "Pipeline Job F failed!"
         }
         always {
-            echo "Pipeline execution completed at $(date)"
+            script {
+                def currentDate = sh(script: 'date', returnStdout: true).trim()
+                echo "Pipeline execution completed at ${currentDate}"
+            }
         }
     }
 }
