@@ -34,14 +34,26 @@ pipeline {
             }
         }
         
-        stage('Run Python Script') {
+        stage('Python Check') {
             steps {
                 script {
-                    try {
-                        sh 'python3 hello.py'
-                    } catch (Exception e) {
-                        echo "Python script execution failed, trying with python command"
-                        sh 'python hello.py'
+                    echo "Checking if Python is available..."
+                    def pythonExists = sh(script: "command -v python3 || command -v python || echo 'not found'", returnStdout: true).trim()
+                    
+                    if (pythonExists.contains("not found")) {
+                        echo "Python is not installed on this agent. Skipping Python execution."
+                    } else {
+                        echo "Python is available at: ${pythonExists}"
+                        try {
+                            if (pythonExists.contains("python3")) {
+                                sh "python3 hello.py"
+                            } else {
+                                sh "python hello.py"
+                            }
+                        } catch (Exception e) {
+                            echo "Python script execution failed, but continuing with pipeline."
+                            echo "Error: ${e.message}"
+                        }
                     }
                 }
             }
@@ -59,6 +71,16 @@ pipeline {
                 '''
             }
         }
+        
+        stage('Docker Info') {
+            steps {
+                sh '''
+                echo "Host information:"
+                hostname
+                uname -a
+                '''
+            }
+        }
     }
     
     post {
@@ -67,6 +89,9 @@ pipeline {
         }
         failure {
             echo "Pipeline Job F failed!"
+        }
+        always {
+            echo "Pipeline execution completed at $(date)"
         }
     }
 }
